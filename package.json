@@ -1,0 +1,16 @@
+{
+  "name": "chatbot-copilot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "imapflow": "^1.0.98",
+    "nodemailer": "^6.9.9",
+    "mailparser": "^3.7.1",
+    "pdf-parse": "^1.1.1",
+    "dotenv": "^16.4.5"
+  }
+}
