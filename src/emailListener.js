@@ -20,7 +20,7 @@ async function checkOnce() {
   try {
     await client.connect();
     await client.mailboxOpen('INBOX');
-    const uids = await client.search({ unseen: true });
+    const uids = await client.search({ unseen: true }, { uid: true });
 
     if (uids.length > 0) {
       console.log(`[POLL] ${uids.length} unread message(s)`);
@@ -37,7 +37,7 @@ async function checkOnce() {
 }
 
 async function processEmail(client, uid) {
-  const message = await client.fetchOne(uid, { source: true });
+  const message = await client.fetchOne(uid, { source: true }, { uid: true });
   if (!message) return;
 
   const parsed = await simpleParser(message.source);
