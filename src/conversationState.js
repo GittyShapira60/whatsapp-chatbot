@@ -23,9 +23,13 @@ export function getHistory(phone) {
 }
 
 export function addMessage(phone, role, content) {
+  addMessages(phone, [{ role, content }]);
+}
+
+export function addMessages(phone, entries) {
   const state = load();
   if (!state[phone]) state[phone] = { messages: [], updatedAt: null };
-  state[phone].messages.push({ role, content });
+  state[phone].messages.push(...entries);
   if (state[phone].messages.length > MAX_MESSAGES_PER_CONVERSATION) {
     state[phone].messages = state[phone].messages.slice(-MAX_MESSAGES_PER_CONVERSATION);
   }
