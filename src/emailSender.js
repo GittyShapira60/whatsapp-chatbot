@@ -1,15 +1,21 @@
 import nodemailer from 'nodemailer';
 
-function createTransporter() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: 465,
-    secure: true, 
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+let transporter = null;
+
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      pool: true,
+    });
+  }
+  return transporter;
 }
 
 export async function sendReply({ to, subject, replyToMessageId, body }) {
@@ -26,12 +32,12 @@ export async function sendReply({ to, subject, replyToMessageId, body }) {
     mail.headers['References'] = replyToMessageId;
   }
 
-  await createTransporter().sendMail(mail);
+  await getTransporter().sendMail(mail);
   console.log(`[SENT] Reply to ${to}`);
 }
 
 export async function sendEscalation({ originalFrom, originalSubject, originalBody, reason }) {
-  await createTransporter().sendMail({
+  await getTransporter().sendMail({
     from: process.env.SMTP_USER,
     to: process.env.ESCALATION_EMAIL,
     subject: `[נדרש מענה אנושי] ${originalSubject}`,

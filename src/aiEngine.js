@@ -6,8 +6,11 @@ function getProviderConfig() {
     return {
       type: 'gemini',
       model,
-      url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      headers: { 'Content-Type': 'application/json' },
+      url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': process.env.GEMINI_API_KEY,
+      },
     };
   }
 
@@ -90,7 +93,9 @@ async function callGemini(provider, systemPrompt, history, images = []) {
   return text.trim();
 }
 
-async function callOpenAICompatible(provider, systemPrompt, history, images = []) {
+const MAX_RATE_LIMIT_RETRIES = 3;
+
+async function callOpenAICompatible(provider, systemPrompt, history, images = [], retryCount = 0) {
   const messages = [{ role: 'system', content: systemPrompt }];
 
   history.forEach((m, i) => {
@@ -125,10 +130,13 @@ async function callOpenAICompatible(provider, systemPrompt, history, images = []
   catch { throw new Error(`Non-JSON response (HTTP ${response.status}): ${rawBody.slice(0, 200)}`); }
 
   if (response.status === 429) {
-    const retryAfter = parseInt(response.headers?.get?.('retry-after') ?? '60', 10);
-    console.warn(`[AI] Rate limited — waiting ${retryAfter}s before retry...`);
+    if (retryCount >= MAX_RATE_LIMIT_RETRIES) {
+      throw new Error(`Rate limited after ${MAX_RATE_LIMIT_RETRIES} retries`);
+    }
+    const retryAfter = Math.min(parseInt(response.headers?.get?.('retry-after') ?? '60', 10), 120);
+    console.warn(`[AI] Rate limited — waiting ${retryAfter}s before retry (${retryCount + 1}/${MAX_RATE_LIMIT_RETRIES})...`);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return callOpenAICompatible(provider, systemPrompt, history, images);
+    return callOpenAICompatible(provider, systemPrompt, history, images, retryCount + 1);
   }
 
   if (!response.ok) throw new Error(`AI error ${response.status}: ${data?.error?.message ?? rawBody.slice(0, 300)}`);
@@ -140,7 +148,9 @@ async function callOpenAICompatible(provider, systemPrompt, history, images = []
 
 export async function generateResponse(history, images = []) {
   const provider = getProviderConfig();
-  const systemPrompt = await getSystemPrompt();
+  // כל תוכן ההודעות של המשתמש בשיחה משמש כשאילתה לבחירת קטעי הידע הרלוונטיים
+  const query = history.filter(m => m.role === 'user').map(m => m.content).join(' ');
+  const systemPrompt = await getSystemPrompt(query);
 
   let text;
   try {
