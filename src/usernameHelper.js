@@ -52,7 +52,14 @@ export function looksLikeXDUsernameError(text) {
   const mentionsOtherEnv = /\bgdt\b|\bhorizon\b|הוריזון|גרין\s*דרים|greendreamteam|\bsky\b|סקיי|sky320/i.test(text);
   if (mentionsOtherEnv) return false;
 
+  // General knowledge questions about users ("מה ההבדל בין היוזרים", "מה סוגי היוזרים", "מה זה יוזר XD")
+  // are not about the asker's own username — the AI answers them from the knowledge base.
+  const isGeneralQuestion = /הבדל|סוגי|סוגים|מה זה|מה זו|הסבר|תסביר|מה הפורמט|איזה יוזרים|אילו יוזרים|כל היוזרים/.test(text);
+  const isAboutOwnUser = /שלי|(^|\s)לי($|[\s?.!,])/.test(text);
+  if (isGeneralQuestion && !isAboutOwnUser) return false;
+
   const hasResetOrUsername = /xd|שם ה?משתמש|שם-משתמש|username|איפוס|סיסמ|יוזר/i.test(text);
-  const hasErrorOrHelp = /שגיאה|לא נמצא|לא מוצא|לא מצא|לא יודע|מה ה|מה שם|לא זוכר|אינו קיים|not found|invalid/i.test(text);
+  const hasErrorOrHelp = /שגיאה|לא נמצא|לא מוצא|לא מצא|לא יודע|לא זוכר|אינו קיים|not found|invalid/i.test(text)
+    || /מה (ה)?(שם ה?משתמש|יוזר)[^?]*שלי/.test(text);
   return hasResetOrUsername && hasErrorOrHelp;
 }

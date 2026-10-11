@@ -71,7 +71,10 @@ async function callGemini(provider, systemPrompt, history, images = []) {
   const body = {
     system_instruction: { parts: [{ text: systemPrompt }] },
     contents,
-    generationConfig: { maxOutputTokens: 800, temperature: 0.2 },
+    // Newer Gemini models ("gemini-flash-latest" moves to them silently) "think" before answering,
+    // and thinking tokens count against maxOutputTokens — a low cap (was 800) can be used up entirely
+    // by thinking, leaving no answer text → error → the user gets the generic fallback message.
+    generationConfig: { maxOutputTokens: 8192, temperature: 0.2 },
   };
 
   const response = await fetch(provider.url, {
@@ -90,8 +93,14 @@ async function callGemini(provider, systemPrompt, history, images = []) {
 
   if (!response.ok) throw new Error(`Gemini error ${response.status}: ${data?.error?.message ?? rawBody.slice(0, 300)}`);
 
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('No content in Gemini response');
+  // The answer may be split across several parts, and parts[0] can be a thought / signature part —
+  // join every non-thought text part instead of trusting parts[0].
+  const candidate = data?.candidates?.[0];
+  const text = (candidate?.content?.parts ?? [])
+    .filter(p => p.text && !p.thought)
+    .map(p => p.text)
+    .join('');
+  if (!text.trim()) throw new Error(`No content in Gemini response (finishReason: ${candidate?.finishReason ?? 'unknown'})`);
   return text.trim();
 }
 

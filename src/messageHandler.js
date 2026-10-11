@@ -47,8 +47,13 @@ const TOPIC_KEYWORDS = [
   'סיסמה', 'יוזר', 'משתמש', 'פרויקט', 'הרשאה', 'גישה', 'טיקט', 'חשבון',
 ];
 
+// פתיחים שמעידים בבירור על שאלת ידע כללית ("מה ההבדל בין סוגי ההרשאות") — גוברים על מילות שירות כמו "הרשאות"/"יוזר חדש"
+const PURE_INFO_OPENERS = /^(מה זה|מה זו|מה ההבדל|מה ההבדלים|מה סוגי|מה כל|אילו סוגי|איזה סוגי|הסבר|תסביר|ספר לי|תספר לי)/;
+
 function looksLikeServiceRequest(text) {
   const lower = text.toLowerCase();
+  const firstLine = (text.split('\n').find(l => l.trim()) ?? '').trim();
+  if (PURE_INFO_OPENERS.test(firstLine) && !/שלי|(^|\s)לי($|[\s?.!,])/.test(firstLine)) return false;
   return SERVICE_KEYWORDS.some(kw => lower.includes(kw));
 }
 
@@ -198,20 +203,14 @@ export async function handleIncomingUserMessage({
     if (/^\d{6}$/.test(code)) {
       const result = await handleOTPSubmission({ senderId, code });
       if (result.valid) {
-        log('[OTP ✅]', `${senderId} → מאומת כעובד GDT ✅`);
-        const history = await getHistory(senderId);
-        try {
-          const aiReply = await generateResponse([...history, { role: 'user', content: result.question }], []);
-          const cleanReply = aiReply.replace(REQUEST_COMPLETE_TOKEN, '').replace('[USERNAME_HELPER]', '').trim();
-          await addMessage(senderId, 'user', result.question);
-          await addMessage(senderId, 'assistant', cleanReply);
-          await sendReply({ to: result.replyTo, subject: result.subject, replyToMessageId: null, senderId, body: cleanReply });
-          log('[OTP ✅]', `${senderId} → תשובה נשלחה`);
-        } catch (e) {
-          log('[OTP ❌]', `${senderId} → שגיאת AI: ${e.message}`);
-          await sendReply({ to: result.replyTo, subject: result.subject, replyToMessageId: null, senderId,
-            body: 'האימות הצליח ✅ אך אירעה שגיאה. שלח שוב את שאלתך 🙏' });
-        }
+        log('[OTP ✅]', `${senderId} → מאומת כעובד GDT ✅ → עונה מיד על השאלה המקורית`);
+        // השאלה המקורית עוברת את הזרימה הרגילה (המשתמש כבר מאומת) — כך מטופלים גם טוקנים כמו
+        // [REQUEST_COMPLETE] / [USERNAME_HELPER] ושגיאות, ולא רק תשובת טקסט גולמית.
+        _recentReplies.delete(`${senderId}:${result.question.slice(0, 120)}`);
+        await handleIncomingUserMessage({
+          senderId, senderName, replyTo: result.replyTo, subject: result.subject, messageId: null,
+          messageText: result.question, hasImages: false, imageCount: 0, imageData: [], channel,
+        });
       } else if (result.reason === 'expired') {
         await sendReply({ to: replyTo, subject, replyToMessageId: messageId, senderId,
           body: 'הקוד פג תוקף ⏱\n\nשלח שוב את שאלתך לקבלת קוד חדש 🙏' });
@@ -424,9 +423,9 @@ export async function handleIncomingUserMessage({
     });
     await sendReply({
       to: replyTo, subject, replyToMessageId: messageId, senderId,
-      body: 'אני על זה, בודק בשבילך 🔍\nאחזור אליך בהקדם 🙏',
+      body: 'מצטער, נתקלתי בתקלה טכנית ולא הצלחתי לענות כרגע 🙏\nהעברתי את הפנייה לנציג והוא יחזור אליך.',
     });
-    log('[REPLY →]', `${senderId} → נשלחה הודעת "אני על זה" + נציג קיבל התראה`);
+    log('[REPLY →]', `${senderId} → נשלחה הודעת תקלה טכנית + נציג קיבל התראה`);
     return;
   }
 
