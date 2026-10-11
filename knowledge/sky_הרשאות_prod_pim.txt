@@ -1,0 +1,33 @@
+== הוספת משתמש לקבוצת הרשאות בסביבת SKY-PROD (PIM) ==
+
+ב-SKY-PROD ניהול הרשאות מוגן דרך PIM (Privileged Identity Management).
+PIM מגביל את תוקף ההרשאה ודורש אקטיבציה לפני שימוש (מוגבל בשעות).
+
+--- הוספת משתמש כ-Member ב-PROD (דרך PIM) ---
+1. כנס ל-https://portal.azure.com
+2. חפש את הקבוצה הרלוונטית
+3. בתפריט הקבוצה → Activity → לחץ על "Privileged Identity Management"
+4. לחץ "Add assignment"
+5. בחר "Member"
+6. בחר את המשתמש — ודא שבוחרים משתמש PROD (prod.sky320.com)
+7. השלם את הבקשה — תוקף ברירת מחדל: שנה
+
+הוספת משתמש כ-Owner (לא דרך PIM):
+אם מוסיפים כ-Owner (לא Member) — מוסיפים כרגיל כמו ב-DEV (ללא PIM).
+
+--- אקטיבציה להרשאות PROD לפני שימוש ---
+חובה לבצע אקטיבציה לפני כל שימוש בהרשאות PROD!
+
+שלבי האקטיבציה:
+1. כנס ל-Azure Portal: https://portal.azure.com
+2. פתח "Privileged Identity Management"
+3. לחץ "My roles" → לחץ "Groups"
+4. מצא את הקבוצה ב-"Eligible assignments"
+5. לחץ "Activate" עבור הקבוצה הרצויה
+6. בחלון שנפתח — הוסף סיבה (Reason) ולחץ Activate
+7. המתן לסיום שלושת שלבי האימות — תתקבל הודעת אישור
+8. כעת ניתן לגשת ל-GCP: https://console.cloud.google.com
+
+אם אין אפשרות Activate:
+← בדוק אם הקבוצה קיימת בטאב "Active assignments"
+← אם לא — פנה ל-Owner של הקבוצה

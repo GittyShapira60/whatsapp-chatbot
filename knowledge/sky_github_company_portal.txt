@@ -1,0 +1,41 @@
+== GitHub ו-Company Portal בסביבת SKY ==
+
+--- GitHub SKY – Enterprise עצמאי (sky320) ---
+כל הפיתוח של SKY עבר ל-Enterprise נפרד משלו ב-GitHub (enterprise name: sky320), מופרד מה-Enterprise הקודם.
+שמות הארגונים השתנו:
+- sky320-developers ← השם הישן ← כיום: sky320-org
+- MCS-LZ-SAFE ← השם הישן ← כיום: AWS-PLAT-LZ-SAFE
+
+הארגונים הישנים (עם השמות הישנים) הפכו לקריאה בלבד מרגע המעבר, ולאחר כחודש נחסמה אליהם הגישה לגמרי.
+כל ה-repos, האדמינים, ה-GitHub teams, ההרשאות וה-GitHub projects הועתקו לארגון החדש.
+לא הועתקו אוטומטית: repo secrets & variables, GitHub apps וכדומה — אלה צריך להגדיר מחדש בארגון החדש.
+אם יש אוטומציה שמשתמשת בשם הארגון הישן — יש לעדכן אותה לשם החדש.
+
+--- GitHub SKY – התחברות לארגון ---
+היוזרים אינם יוזרים אישיים עם SSO של Sky כמו קודם — ההתחברות דורשת חיבור מול ה-IDP, באחת משתי דרכים:
+1. דרך עמוד הכניסה הרגיל של github.com — שם המשתמש בפורמט: Username_sky320
+   דוגמה: אם שם המשתמש ב-Sky הוא ralishayev, מזינים בעמוד הכניסה: ralishayev_sky320
+2. דרך קישור ה-SSO הישיר של הארגון: https://github.com/orgs/sky320-org/sso
+   (במקרה זה מזינים ישירות את שם המשתמש של Sky, בלי הסיומת _sky320)
+
+תקלה אפשרית: בעיית התחברות לארגון החדש למרות שהיוזר קיים ב-Enterprise — יש להיכנס ישירות דרך קישור ה-SSO:
+https://github.com/orgs/sky320-org/sso
+
+לקבלת הרשאות ל-GitHub repository — יש לפתוח בקשה ב-ServiceNow:
+Cloud IT Support → Granting Permissions to GitHub
+(ראה קובץ snow_cloud_it_support.txt לפרטים)
+
+לכל בעיה אחרת שקשורה לפיצול סביבת SKY ב-GitHub (ה-Enterprise החדש) — יש לפתוח טיקט ב-ServiceNow לצוות App Security (קטגוריה: Other) או לפנות לצוות ה-NOC.
+
+--- החלפת טלפון / אפליקציית Authenticator ---
+החלפת טלפון או אפליקציית Authenticator (לצורך אימות/SSO) מתבצעת דרך ווצאפ של סלקום: 052-4120234
+
+--- Company Portal – התקנת כלים ---
+Company Portal היא חנות האפליקציות של המכונה.
+כוללת גרסאות של כלי פיתוח וכלי קולבורציה.
+לפתיחה: חפש "Company Portal" בתפריט שולחן העבודה.
+
+אפליקציות זמינות לדוגמה: Visual Studio Code, Postman, WinRAR, GitHub CLI, Remote Desktop.
+
+אם כלי מסוים חסר, גרסה לא עדכנית, או יש בעיה בהתקנה:
+← פתח קריאה ב-ServiceNow: Cloud IT Support → Installing an Application / Development Tool

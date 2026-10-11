@@ -1,0 +1,33 @@
+== Cloud IT Support – בקשות ב-ServiceNow ==
+
+כניסה: https://servicenow.idf.il → לחץ "Cloud IT Support"
+
+--- סוגי בקשות זמינות ---
+
+1. Assign AVD Machine – הקצאת מכונה
+   שדות: שם מלא, Domain (SKY), AVD environment assignment, DEV user, Phone, Unit, Related project
+   מכונת DEV: Hostpool-9900-DEV
+   מכונת PROD: לפי Zone, או Hostpool-9900-Plat (גישה לכל הZones)
+
+2. Granting Permissions to GitHub – הרשאות GitHub
+   שדות: שם מלא, Domain (SKY), DEV user, Phone, Unit, Related project, GitHub username, Organization (Sky320), Repository, Permission (read/write/admin)
+   Repos: Workspace-9900-dev / Workspqce-9900-plat
+
+3. Install (Format) Workstations – פרמוט והתקנת עמדות
+   שדות: שם מלא, Phone, Domain (sky or ratzif), Are you a new customer? (NO), Unit, Related project, Computer serial number (SN), ציוד נלווה, Onboarding training required?, Base entry approval
+   הגעה אפשרית מיומיים מרגע פתיחת הפנייה, בחירת שעה: 10:00-12:00 או 13:30-16:30
+
+4. Increasing Resources for AVD Machines – הגדלת משאבים (FinOps)
+   שדות: שם מלא, Domain (SKY), DEV user, Phone, Unit, Related project, VM's name (אופציונלי), Problem description
+   אם יש אישור FinOps — יש לצרפו כקובץ
+
+5. Onboarding Training during workstation pickup – תיאום הדרכה
+   שדות: שם מלא, Phone, Unit, Related project (9900)
+
+6. Installing an Application / Development Tool – התקנת אפליקציה/כלי פיתוח
+   שדות: שם מלא, Domain (SKY), DEV user, Phone, Unit, Related project, Application name, Installation location (VM/Local), URL or Installation file, URL
+   דורש אישור סייבר
+
+--- לכל הבקשות ---
+- לאחר Submit — שמרו את מספר הטיקט לקידום מול 9900 CSM
+- שעות פעילות: 09:00–18:00 (כפוף לשינוי)

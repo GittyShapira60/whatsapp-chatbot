@@ -1,14 +1,38 @@
 services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --notify-keyspace-events Ex
+
+  redis-ui:
+    image: redis/redisinsight:latest
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+
   chatbot:
     build: .
     restart: unless-stopped
     env_file:
       - .env
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379
+    # פורט ה-webhook של WhatsApp Cloud API (Meta) — רלוונטי רק אם WHATSAPP_* מוגדרים ב-.env.
+    # Meta דורשת endpoint ציבורי ב-HTTPS; יש להעמיד reverse proxy/TLS (nginx / Caddy /
+    # Cloudflare Tunnel) מול הפורט הזה — מחוץ לתחום docker-compose הזה.
+    ports:
+      - "3002:3002"
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  redis_data:

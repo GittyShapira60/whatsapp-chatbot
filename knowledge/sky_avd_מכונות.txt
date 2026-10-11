@@ -1,0 +1,46 @@
+== AVD – מכונות וירטואליות בסביבת SKY ==
+
+הכניסה לסביבת SKY נעשית דרך מכונה וירטואלית (AVD):
+- מכונת DEV: לפיתוח, גישה פתוחה לאינטרנט, מתחברים עם משתמש SKY-DEV
+- מכונת PROD: גישה מוגבלת (whitelist), מתחברים עם משתמש SKY-PROD
+
+הקצאת מכונה: נעשית דרך פתיחת טיקט ב-SNOW תחת Cloud IT Support → Assign AVD Machine.
+
+--- התחברות למכונת AVD ---
+1. פתח Remote Desktop מהתפריט
+2. אם מופיעה הודעת Subscribe — לחץ Subscribe והתחבר עם משתמש SKY-DEV
+3. לאחר ה-Subscribe יופיעו המכונות שלך:
+   - workspace-9900-Trust (מכונת PROD)
+   - workspace-9900-Untrst (מכונת PROD)
+   - workspace-dev → SessionDesktop (מכונת DEV)
+   שים לב: SessionDesktop תחת workspace-dev הוא מכונת DEV של 9900 — לא להתבלבל
+4. לחץ פעמיים על המכונה — ההתחברות לוקחת כמה דקות
+5. אם ההתחברות נכשלת — נסה שוב. אם נכשלת כמה פעמים — פתח טיקט ב-SNOW
+
+--- תקלה: לא מופיעות מכונות AVD ---
+1. ודא שביצעת Subscribe עם משתמש SKY-DEV
+2. בצע Sign-out ואז Sign-in מחדש
+3. אם עדיין חסרות מכונות — פתח טיקט ב-SNOW
+
+
+--- פתיחת טיקט SNOW על תקלת AVD ---
+קישור ישיר לפתיחת Incident: https://servicenow.idf.il/esc?id=sc_cat_item&sys_id=3f1dd0320a0a0b99000a53f7604a2ef9
+
+מה למלא:
+- Where did you experience the issue? → AVD
+- What's the issue? → General machine error
+- Environment: DEV
+- Impact: 2-Medium
+- Urgency: 2-Medium
+- Incident title: "לא מופיע AVD"
+- Describe your issue: "ביצעתי sync כמה פעמים ועדיין לא מופיע AVD"
+- Department color: GREEN
+- Related project: 9900
+- Phone + Contact Email IDF (מייל ת"ז)
+- Add attachments: מומלץ להוסיף צילום מסך של השגיאה
+
+--- כתובות שימושיות מתוך המכונה ---
+- GitHub:              https://github.com
+- GCP Console:         https://console.cloud.google.com
+- Azure Portal:        https://portal.azure.com
+- תיעוד SKY:          https://doc-center.sky320.org

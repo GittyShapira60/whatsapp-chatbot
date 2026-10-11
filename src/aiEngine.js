@@ -1,4 +1,4 @@
-import { getSystemPrompt } from './knowledgeBase.js';
+import { getSystemPrompt, getMinimalSystemPrompt } from './knowledgeBase.js';
 
 function getProviderConfig() {
   if (process.env.GEMINI_API_KEY) {
@@ -38,10 +38,14 @@ function getProviderConfig() {
   }
 
   if (process.env.GITHUB_TOKEN) {
+    const rawModel = process.env.GITHUB_MODEL ?? 'gpt-4o-mini';
+    // GitHub Models GA API requires a publisher-prefixed model id (e.g. "openai/gpt-4o");
+    // models.inference.ai.azure.com (the old preview endpoint, bare model ids) was retired.
+    const model = rawModel.includes('/') ? rawModel : `openai/${rawModel}`;
     return {
       type: 'github-models',
-      model: process.env.GITHUB_MODEL ?? 'gpt-4o-mini',
-      url: 'https://models.inference.ai.azure.com/chat/completions',
+      model,
+      url: 'https://models.github.ai/inference/chat/completions',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
@@ -67,13 +71,14 @@ async function callGemini(provider, systemPrompt, history, images = []) {
   const body = {
     system_instruction: { parts: [{ text: systemPrompt }] },
     contents,
-    generationConfig: { maxOutputTokens: 600, temperature: 0.2 },
+    generationConfig: { maxOutputTokens: 800, temperature: 0.2 },
   };
 
   const response = await fetch(provider.url, {
     method: 'POST',
     headers: provider.headers,
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000),
   });
 
   const rawBody = await response.text();
@@ -114,7 +119,8 @@ async function callOpenAICompatible(provider, systemPrompt, history, images = []
   const response = await fetch(provider.url, {
     method: 'POST',
     headers: provider.headers,
-    body: JSON.stringify({ model: provider.model, messages, max_tokens: 600, temperature: 0.2 }),
+    body: JSON.stringify({ model: provider.model, messages, max_tokens: 800, temperature: 0.2 }),
+    signal: AbortSignal.timeout(30000),
   });
 
   const rawBody = await response.text();
@@ -126,6 +132,10 @@ async function callOpenAICompatible(provider, systemPrompt, history, images = []
 
   if (response.status === 429) {
     const retryAfter = parseInt(response.headers?.get?.('retry-after') ?? '60', 10);
+    if (retryAfter > 15) {
+      // Rate limit too long to wait inline — fail fast so other messages aren't blocked
+      throw new Error(`Rate limited by AI provider (retry-after: ${retryAfter}s). Try again in a few minutes.`);
+    }
     console.warn(`[AI] Rate limited — waiting ${retryAfter}s before retry...`);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
     return callOpenAICompatible(provider, systemPrompt, history, images);
@@ -140,25 +150,53 @@ async function callOpenAICompatible(provider, systemPrompt, history, images = []
 
 export async function generateResponse(history, images = []) {
   const provider = getProviderConfig();
-  const systemPrompt = await getSystemPrompt();
+  const recentUserText = history
+    .filter(m => m.role === 'user')
+    .slice(-2)
+    .map(m => m.content)
+    .join(' ');
+  const fullPrompt = await getSystemPrompt(recentUserText);
 
-  let text;
-  try {
-    if (provider.type === 'gemini') {
-      text = await callGemini(provider, systemPrompt, history, images);
-    } else {
-      text = await callOpenAICompatible(provider, systemPrompt, history, images);
+  let trimmedHistory = [...history];
+  let useMinimalPrompt = false;
+
+  while (true) {
+    const systemPrompt = useMinimalPrompt ? getMinimalSystemPrompt() : fullPrompt;
+    try {
+      const text = provider.type === 'gemini'
+        ? await callGemini(provider, systemPrompt, trimmedHistory, images)
+        : await callOpenAICompatible(provider, systemPrompt, trimmedHistory, images);
+
+      if (trimmedHistory.length < history.length) {
+        console.warn(`[AI] היסטוריה קוצרה מ-${history.length} ל-${trimmedHistory.length} הודעות (413)`);
+      }
+      if (useMinimalPrompt) {
+        console.warn(`[AI] ענה ללא בסיס ידע (413 fallback)`);
+      }
+      console.log(`[AI] ${provider.type} | ${text.length} chars`);
+      return text;
+    } catch (err) {
+      if (err.message?.includes('413')) {
+        if (trimmedHistory.length > 1) {
+          const remove = Math.min(2, trimmedHistory.length - 1);
+          trimmedHistory.splice(0, remove);
+          console.warn(`[AI] 413 too large — מקצר היסטוריה ל-${trimmedHistory.length} הודעות, מנסה שוב...`);
+          continue;
+        }
+        if (!useMinimalPrompt) {
+          useMinimalPrompt = true;
+          console.warn(`[AI] 413 too large — עובר לפרומפט מקוצר (ללא בסיס ידע), מנסה שוב...`);
+          continue;
+        }
+      }
+
+      const cause = err.cause;
+      console.error(`[AI NETWORK ERROR] message: ${err.message}`);
+      if (cause) {
+        console.error(`[AI NETWORK ERROR] cause.message: ${cause.message ?? cause}`);
+        console.error(`[AI NETWORK ERROR] cause.code: ${cause.code ?? 'N/A'}`);
+      }
+      throw new Error(`Network error: ${err.message} | cause: ${cause?.message ?? cause ?? 'unknown'}`);
     }
-  } catch (networkErr) {
-    const cause = networkErr.cause;
-    console.error(`[AI NETWORK ERROR] message: ${networkErr.message}`);
-    if (cause) {
-      console.error(`[AI NETWORK ERROR] cause.message: ${cause.message ?? cause}`);
-      console.error(`[AI NETWORK ERROR] cause.code: ${cause.code ?? 'N/A'}`);
-    }
-    throw new Error(`Network error: ${networkErr.message} | cause: ${cause?.message ?? cause ?? 'unknown'}`);
   }
-
-  console.log(`[AI] ${provider.type} | ${text.length} chars`);
-  return text;
 }

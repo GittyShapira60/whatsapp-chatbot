@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-RUN apt-get update -qq && apt-get install -y -qq ca-certificates \
+RUN apt-get update -qq && apt-get install -y -qq ca-certificates openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
 # תעודות נטפרי — כל קבצי ה-CRT בתיקייה

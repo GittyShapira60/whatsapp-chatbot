@@ -1,14 +1,40 @@
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
-import { parseEasySendEmail, isFromEasySend } from './messageParser.js';
-import { needsEscalation, aiCantAnswer } from './knowledgeBase.js';
-import { generateResponse } from './aiEngine.js';
-import { sendReply, sendEscalation } from './emailSender.js';
-import { getHistory, addMessage, clearHistory } from './conversationState.js';
+import { sendReply } from './emailSender.js';
+import { getReplyTo, getChannel, clearHandoff } from './conversationState.js';
+import { log } from './logger.js';
 
-const REQUEST_COMPLETE_TOKEN = '[REQUEST_COMPLETE]';
+// הקובץ הזה כבר לא הערוץ הראשי לקבלת הודעות (זה עבר ל-whatsappWebhookServer.js) —
+// הוא נשאר קיים רק כדי לתפוס תשובות של נציג אנושי שמגיעות בחזרה למייל אחרי escalation.
+
+let polling = false;
+
+// חולץ רק את טקסט התגובה החדשה — חותך לפני הציטוט המקורי
+function extractReplyText(rawText) {
+  const lines = rawText.split('\n');
+  const out = [];
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith('>')) break;
+    if (/^On .+ wrote:/.test(t)) break;
+    if (/^-{4,}/.test(t)) break;
+    if (t.includes('──────')) break;
+    if (t) out.push(t);
+  }
+  return out.join('\n').trim();
+}
 
 async function checkOnce() {
+  if (polling) return;
+  polling = true;
+  try {
+    await _checkOnce();
+  } finally {
+    polling = false;
+  }
+}
+
+async function _checkOnce() {
   const client = new ImapFlow({
     host: process.env.IMAP_HOST,
     port: Number(process.env.IMAP_PORT),
@@ -17,20 +43,24 @@ async function checkOnce() {
     logger: false,
   });
 
+  client.on('error', (err) => {
+    log('[IMAP ERROR]', err.message);
+  });
+
   try {
     await client.connect();
     await client.mailboxOpen('INBOX');
     const uids = await client.search({ unseen: true }, { uid: true });
 
     if (uids.length > 0) {
-      console.log(`[POLL] ${uids.length} unread message(s)`);
+      log('[POLL]', `נמצאו ${uids.length} הודעות חדשות בתיבה`);
       for (const uid of uids) {
         await client.messageFlagsAdd(uid, ['\\Seen'], { uid: true });
         await processEmail(client, uid);
       }
     }
   } catch (err) {
-    console.error(`[POLL ERROR] ${err.message}`);
+    log('[POLL ERROR]', err.message);
   } finally {
     await client.logout().catch(() => {});
   }
@@ -41,104 +71,86 @@ async function processEmail(client, uid) {
   if (!message) return;
 
   const parsed = await simpleParser(message.source);
-  const { replyTo, senderName, senderPhone, subject, messageText, messageId, hasImages, imageCount, imageData } = parseEasySendEmail(parsed);
 
-  // דילוג על מיילים שהבוט עצמו שלח (מונע לולאה אינסופית)
   const fromAddress = parsed.from?.value?.[0]?.address ?? '';
+
+  console.log('');
+  console.log('─────────────────────────────────────────────────');
+  log('[MAIL נכנס]', `מ: ${fromAddress}`);
+  log('            ', `נושא: ${(parsed.subject ?? '').slice(0, 80)}`);
+
+  // דילוג על מיילים שהבוט עצמו שלח
   if (fromAddress === process.env.SMTP_USER) {
-    console.log(`[SKIP] Own message — skipping`);
+    log('[SKIP]', 'הודעה שהבוט עצמו שלח — מדלג');
     return;
   }
 
-  if (!messageText && !hasImages) return;
+  // ── תשובת נציג לescalation ──
+  const escalationEmail = (process.env.ESCALATION_EMAIL ?? '').toLowerCase();
+  const isFromAgent = fromAddress.toLowerCase() === escalationEmail;
 
-  const senderId = senderPhone ?? replyTo;
+  log('[AGENT CHECK]', `from="${fromAddress}" | ESCALATION_EMAIL="${escalationEmail}" | match=${isFromAgent}`);
 
-  if (hasImages) {
-    console.log(`[IN] ${senderName} (${senderId}): [${imageCount} image(s)] "${(messageText ?? '').slice(0, 60)}"`);
-  } else {
-    console.log(`[IN] ${senderName} (${senderId}): "${messageText.slice(0, 80)}"`);
-  }
+  if (isFromAgent) {
+    log('[נציג השיב]', `מייל מ-${fromAddress}`);
+    const subjectStr = parsed.subject ?? '';
+    const bodyStr = parsed.text ?? '';
+    log('[נציג השיב]', `נושא: "${subjectStr.slice(0, 120)}"`);
 
-  // בדיקת escalation מיידית לפי מילות מפתח דחופות
-  if (messageText && needsEscalation(messageText)) {
-    console.log(`[ESCALATE] Urgent keywords detected`);
-    clearHistory(senderId);
-    await sendEscalation({
-      originalFrom: `${senderName} ${senderId}`,
-      originalSubject: subject,
-      originalBody: messageText,
-      reason: 'זוהו מילות מפתח דחופות',
-    });
-    await sendReply({
-      to: replyTo, subject, replyToMessageId: messageId,
-      body: 'קיבלתי את הפנייה שלך. בגלל הדחיפות, העברתי אותה לטיפול מיידי. נחזור אליך בהקדם.',
-    });
-    return;
-  }
+    // מחלץ את ה-senderId: קודם [ID:...] (פורמט חדש), אחר כך 972... (fallback לאחות ישנות)
+    const idTagMatch = subjectStr.match(/\[ID:([^\]]+)\]/);
+    const phoneOnlyMatch = subjectStr.match(/972\d+/) ?? bodyStr.match(/972\d+/);
+    const resolvedId = idTagMatch ? idTagMatch[1] : (phoneOnlyMatch ? phoneOnlyMatch[0] : null);
 
-  // טעינת היסטוריית שיחה + הוספת הודעה נוכחית
-  const history = getHistory(senderId);
-  const userText = messageText || (hasImages ? `[המשתמש שלח ${imageCount} תמונה/ות]` : '');
-  history.push({ role: 'user', content: userText });
+    log('[נציג השיב]', `זיהוי senderId: ${resolvedId ?? '⚠️ לא נמצא'} (שיטה: ${idTagMatch ? '[ID:tag]' : phoneOnlyMatch ? '972... fallback' : 'כשלון'})`);
 
-  try {
-    const aiReply = await generateResponse(history, imageData ?? []);
-    console.log(`[AI] Response ready (${aiReply.length} chars)`);
+    if (resolvedId) {
+      // משתמשי WhatsApp Cloud API לא שומרים replyTo (אין להם כתובת מייל וירטואלית) —
+      // הגייט חייב לבדוק גם את הערוץ, אחרת תשובת הנציג תיבלע בשקט.
+      const channel = await getChannel(resolvedId);
+      const userReplyTo = await getReplyTo(resolvedId);
+      const resolutionText = extractReplyText(bodyStr);
 
-    const isComplete = aiReply.includes(REQUEST_COMPLETE_TOKEN);
-    const cleanReply = aiReply.replace(REQUEST_COMPLETE_TOKEN, '').trim();
-
-    if (aiCantAnswer(cleanReply)) {
-      // AI לא יודע — escalation ואיפוס שיחה
-      console.log(`[ESCALATE] AI cannot answer`);
-      clearHistory(senderId);
-      await sendEscalation({
-        originalFrom: `${senderName} ${senderId}`,
-        originalSubject: subject,
-        originalBody: userText,
-        reason: hasImages ? `הבוט לא הצליח לפרש את התמונה (${imageCount} תמונות)` : 'הבוט לא מצא מידע מתאים',
-      });
-      await sendReply({ to: replyTo, subject, replyToMessageId: messageId, body: cleanReply });
-      return;
-    }
-
-    if (isComplete) {
-      console.log(`[COMPLETE] All details collected — escalating`);
-      const fullHistory = [...history, { role: 'assistant', content: cleanReply }];
-      const summary = fullHistory
-        .filter(m => m.role === 'user')
-        .map(m => m.content)
-        .join('\n---\n');
-
-      await sendEscalation({
-        originalFrom: `${senderName} ${senderId}`,
-        originalSubject: subject,
-        originalBody: summary,
-        reason: 'בקשה שהושלמה — כל הפרטים נאספו',
-      });
-      clearHistory(senderId);
+      if ((channel === 'whatsapp_api' || userReplyTo) && resolutionText) {
+        log('[HANDOFF ✓]', `${resolvedId} → שולח תשובת נציג למשתמש (ערוץ: ${channel})`);
+        log('            ', `תוכן: "${resolutionText.slice(0, 80)}"`);
+        await sendReply({
+          to: userReplyTo,
+          subject: `הודעת ווטסאפ חדשה מ ${resolvedId}`,
+          replyToMessageId: null,
+          senderId: resolvedId,
+          body: resolutionText,
+        });
+        await clearHandoff(resolvedId);
+        log('[HANDOFF ✓]', `${resolvedId} → handoff נוקה ✅ הבוט חוזר לפעולה`);
+      } else {
+        if (channel !== 'whatsapp_api' && !userReplyTo) log('[HANDOFF ✓]', `${resolvedId} → אין replyTo שמור — לא נשלח מייל למשתמש`);
+        if (!resolutionText) log('[HANDOFF ✓]', `${resolvedId} → תוכן הודעת הנציג ריק — לא נשלח מייל למשתמש`);
+        await clearHandoff(resolvedId);
+        log('[HANDOFF ✓]', `${resolvedId} → handoff נוקה ✅ הבוט חוזר לפעולה`);
+      }
     } else {
-      addMessage(senderId, 'user', userText);
-      addMessage(senderId, 'assistant', cleanReply);
+      log('[נציג השיב]', `⚠️ לא ניתן לזהות משתמש — לא נמצא [ID:...] ולא 972... בנושא/גוף`);
+      log('[נציג השיב]', `גוף המייל (100 תווים ראשונים): "${bodyStr.slice(0, 100)}"`);
     }
-
-    await sendReply({ to: replyTo, subject, replyToMessageId: messageId, body: cleanReply });
-
-  } catch (err) {
-    console.error(`[ERROR] ${err.message}`);
-    await sendEscalation({
-      originalFrom: `${senderName} ${senderId}`,
-      originalSubject: subject,
-      originalBody: userText,
-      reason: `שגיאה טכנית: ${err.message}`,
-    });
+    return;
   }
+
+  // כל מייל אחר בתיבה הזו (למשל אזעקות/spam) — לא רלוונטי, מתעלמים
+  log('[SKIP]', `מייל שאינו תשובת נציג — מתעלם`);
+  console.log('─────────────────────────────────────────────────');
+  console.log('');
 }
 
 export async function startListening() {
   const pollInterval = Number(process.env.POLL_INTERVAL_SECONDS ?? 30) * 1000;
-  console.log(`[LISTEN] Polling every ${pollInterval / 1000}s`);
+  console.log('');
+  console.log('═════════════════════════════════════════════════');
+  console.log(`  📧 מאזין לתשובות נציג | בדיקת תיבה כל ${pollInterval / 1000} שניות`);
+  console.log(`  📧 תיבה: ${process.env.IMAP_USER}`);
+  console.log(`  📤 נציג: ${process.env.ESCALATION_EMAIL}`);
+  console.log('═════════════════════════════════════════════════');
+  console.log('');
   await checkOnce();
   setInterval(checkOnce, pollInterval);
 }
