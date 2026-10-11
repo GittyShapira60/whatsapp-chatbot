@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git diff *)",
+      "Bash(git checkout *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git push *)",
+      "Bash('C:/Program Files/GitHub CLI/gh.exe' pr create --title 'Code Review — WhatsApp Chatbot initial codebase' --base main --head review --body ' *)",
+      "Bash(docker-compose restart *)",
+      "Bash(docker-compose ps *)",
+      "Bash(docker-compose up *)",
+      "Read(//c/Program Files \\(x86\\)/Microsoft SDKs/Azure/CLI2/wbin/**)",
+      "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Microsoft SDKs\\\\Azure\\\\CLI2\\\\wbin\\\\az.cmd\" --version 2>&1)",
+      "PowerShell(Get-ChildItem \"c:\\\\Gitty Shapira\\\\ענן\\\\chatbot-copilot\\\\knowledge\\\\\" | Where-Object { !$_.PSIsContainer } | Select-Object Name)",
+      "Read(//c/Gitty Shapira/���/chatbot-copilot/**)",
+      "Bash(git restore *)"
+    ]
+  }
+}

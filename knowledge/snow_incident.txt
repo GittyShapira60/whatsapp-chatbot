@@ -1,0 +1,45 @@
+== פתיחת Incident ב-ServiceNow ==
+
+כניסה: https://servicenow.idf.il
+שלב א: לחץ "Create Incident"
+שלב ב: לחץ "Create Incident"
+
+--- שדות הטופס ---
+- Where did you experience the issue? (קטגוריה — ראה מטה)
+- What's the issue? (תת-קטגוריה)
+- Environment: DEV / PROD
+- Impact: 1-High / 2-Medium / 3-Low
+- Urgency: 1-High / 2-Medium / 3-Low
+- Incident title (תיאור קצר)
+- Describe your issue (פירוט מלא)
+- Department color: GREEN תמיד!
+- Phone to contact
+- Contact Email IDF (מייל ת"ז)
+- Add attachments — חשוב לצרף צילום מסך של התקלה
+- לחץ Submit ושמור את מספר הטיקט (INCXXXXXXX)
+
+--- סוגי טיקטים: מה לבחור ב"Where did you experience the issue?" ---
+
+1. Identities — לבעיות זהויות והרשאות:
+   פתח Incident מסוג Identities כאשר:
+   - המשתמש לא מצליח להתחבר
+   - המשתמש לא רואה קבוצת הרשאות שאמורה להיות לו
+   - חסרות הרשאות לאפליקציה קיימת
+   - בעיית גישה ל-AVD
+   - בעיית גישה ל-Git
+   - כל תקלה הקשורה לזהויות והרשאות
+   רלוונטי לסביבות SKY ו-HORIZON.
+   תת-קטגוריות: Permissions for users / Permissions for applications / Strong user creation / Other
+
+2. GCP (Sky / Horizon) — לתקלות GCP:
+   - VPC SC Exclusions: חריגות פוליסות SKY (REPO, CI/CD, DB, בנייה בפלטפורמה)
+   - FW Exclusions: בקשות להחרגה/פתיחה של Palo Alto FW
+   - FinOps: חיובים לא תקינים / חיובים שלא אמורים להופיע / חוסר יכולת לראות חיוב
+   - Other: מכונה שלא מופיעה / מכונה שנופלת / בעיות AVD תפעוליות / אפליקציה לא עובדת / תקלות כלליות בעמדה
+
+--- לאחר פתיחת הטיקט ---
+- מספר פנייה: INCXXXXXXX
+- Actions: לסמן Resolve כשהתקלה נפתרה (בד"כ התומך עושה זאת)
+- כשבסטטוס Resolve — לחץ Close לאחר שבדקת שהתקלה נפתרה
+- שים לב: טיקט שלא נסגר נחשב פתוח; טיקט שנסגר לא ניתן להחיות
+- Activity: כולל היסטוריית שיחות עם התומך

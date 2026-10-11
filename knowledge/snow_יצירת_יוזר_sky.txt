@@ -1,0 +1,30 @@
+== יצירת משתמש SKY דרך ServiceNow ==
+
+כניסה: https://servicenow.idf.il (עם יוזר XD)
+
+--- שלבי פתיחת בקשה ---
+1. לחץ "Create Request"
+2. בחר "Create SKY Dev/Prod user"
+3. מלא את כל השדות הנדרשים:
+   - Type Of User: DEV / PROD / Both
+   - First Name (English)
+   - Last Name (English)
+   - ID (ת"ז)
+   - Phone
+   - Pikud (פיקוד)
+   - Do you have XC user in TERRA? (Yes/No)
+4. חובה: העלה קובץ אישור סיווג ביטחוני (Add attachments)
+5. לחץ Submit
+
+--- לאחר הגשת הבקשה ---
+1. ניתן לעקוב אחר הסטטוס דרך מסלול האישורים ב-SNOW
+2. אם התהליך מתעכב — פנה ל-9900 CSM לקידום הבקשה
+3. לאחר אישור הבקשה — איפוס סיסמה: https://passwordreset.microsoftonline.com/
+4. פורמט יוזר: אות ראשונה שם פרטי + שם משפחה + 2 ספרות אחרונות ת"ז
+   דוגמה: Misraeli00@dev.sky320.com (DEV) / Misraeli00@prod.sky320.com (PROD)
+5. לכניסה ראשונה ל-GCP — חובה שיוך לקבוצת הרשאות אחת ב-Azure Entra ID
+
+--- הקצאת מכונות AVD ---
+לאחר יצירת המשתמש, יש לבקש הקצאת מכונת AVD:
+ServiceNow → Cloud IT Support → Assign AVD Machine
+(ראה קובץ snow_cloud_it_support.txt לפרטים)

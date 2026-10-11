@@ -1,0 +1,68 @@
+אם משתמש שואל על VPN, יש להסביר לו שנעשה שינוי ומהיום מתחברים אך ורק דרך GlobalProtect (ולא דרך ה-VPN הישן).
+
+== התחברות לעמדת SKY + VPN ==
+
+חוק בסיסי: מתחברים לעמדה אך ורק עם משתמש SKY-DEV.
+
+שלבי ההתחברות:
+1. היכנס לעמדה עם משתמש SKY-DEV
+2. פתח את Azure VPN Client מהתפריט
+3. יופיע פרופיל VPN אחד בשם "vnet-hub-palo" — לחץ Connect
+4. לאחר חיבור מוצלח — הפרופיל יראה "Connected"
+
+--- תקלה: לא מופיע פרופיל VPN ---
+
+מדריך חיבור והגדרת GlobalProtect בסקיי
+שלב 1: בדיקת התקנה מקדימה
+בדיקה: חפש את האפליקציה GlobalProtect בשורת החיפוש של Windows או ודא שהאייקון שלה מופיע בשורת המשימות (Taskbar)
+במידה והיא לא מותקנת: יש לגשת ל-Company Portal ולהתקין אותה משם.
+שלב 2: התחברות ראשונית והזנת פורטל
+ודא שיש לך חיבור יציב לאינטרנט.
+פתח את האפליקציה GlobalProtect.
+בשדה Portal, הזן את הכתובת: vpn.sky320.com.
+ לחץ על Connect. 
+ שלב 3: אימות 
+ האפליקציה תעבור למצב Connecting... ויפתח חלון ייעודי.
+יש להשלים את תהליך ההתאמתות מול Entra ID.
+ שלב 4: סיום החיבור
+ לאחר אימות מוצלח, הסטטוס בפורטל ישתנה ל-Connected (תחת Sky-GW / Best Available Gateway).
+ מעתה ניתן להתחבר ל-AVD's ולהמשיך לעבוד כרגיל. 
+ פתרון תקלות נפוצות
+ במידה ומופיעה שגיאה Connection Failed עם ההודעה:
+ The network connection is unreachable or the portal is unresponsive
+ 1. ודא מחדש שהחיבור לאינטרנט שלך יציב ונסה להתחבר שוב.
+ 2. יש לפתוח טיקט 
+
+ ---אם הבעיה ממשיכה ולא נפתרת, יש לפתוח טיקט בSERVICE NOW ---
+ --- פתיחת טיקט SNOW על תקלת VPN ---
+קישור ישיר לפתיחת Incident: https://servicenow.idf.il/esc?id=sc_cat_item&sys_id=3f1dd0320a0a0b99000a53f7604a2ef9
+
+Where did you experience the issue?
+בחר: Network & Connectivity Services
+What's the issue?
+בחר: Global Protect error / Not connecting
+Environment
+בחר את סביבת העבודה שלך (לדוגמה: DEV)
+Impact & Urgency
+Impact: הגדר כ- 2 - Medium
+Urgency: הגדר כ- 2 - Medium
+Incident title
+רשום כותרת קצרה וברורה, למשל: "לא ניתן להתחבר לגלובל פרוטקט"
+Describe your issue
+פרט את הבעיה בתיבת הטקסט (מומלץ להיעזר בנוסח הבא ולעדכן את שם היוזר שלך):
+היי,
+ניסיתי להתחבר לגלובל פרוטקט וזה לא נותן לי.
+שם היוזר שלי: [הכנס כאן את שם היוזר סקיי דאב שלך]
+Department color & Related project
+Department color: בחר Green
+Related project: 9900
+פרטי התקשרות ואימייל
+Phone to contact: הזן את מספר הטלפון הנייד שלך ליצירת קשר
+Account name: הזן את היוזר סקיי 
+Contact Email IDF: ודא שכתובת המייל הצבאית שלך מופיעה נכון (לדוגמה: 214443590@idf.il)
+צירוף קבצים (מומלץ מאוד בתקלות תקשורת)
+תחת Add attachments, 
+צרף צילום מסך של הודעת השגיאה בגלובל פרוטקט (כמו Connection Failed) כדי לעזור לצוות הטכני לאבחן את הבעיה מהר יותר.
+סיום ושליחה
+לחץ על כפתור ה-Submit בצידו הימני העליון של הטופס לשליחת הטיקט.
+
