@@ -27,7 +27,7 @@
 קישור ישיר לפתיחת Incident: https://servicenow.idf.il/esc?id=sc_cat_item&sys_id=3f1dd0320a0a0b99000a53f7604a2ef9
 
 מה למלא:
-- Where did you experience the issue? → AVD
+- Where did you experience the issue? → Workstations
 - What's the issue? → General machine error
 - Environment: DEV
 - Impact: 2-Medium

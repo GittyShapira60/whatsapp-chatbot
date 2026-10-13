@@ -6,11 +6,11 @@
 --- דרישות מקדימות ---
 1. נדרש משתמש SKY-DEV לביצוע הלבנה/השחרה בסביבת DEV, ומשתמש SKY-PROD בסביבת PROD.
 2. אם אין לכם משתמש SKY — פנו ל-CSM שלכם.
-   אם יש לכם משתמש SKY אך הוא נעול — יש לפתוח טיקט ב-ServiceNow (Incident, קטגוריה: Identities) כדי לשחרר אותו.
+   אם יש לכם משתמש SKY אך הוא נעול — יש לפתוח טיקט ב-ServiceNow (Incident, קטגוריה: Users & Access) כדי לשחרר אותו.
 
 --- קבלת גישה לבאקט הייעודי (טיקט ייעודי) ---
 גישה לבאקט ההלבנה/השחרה אינה אוטומטית — יש לבקש אותה בנפרד ב-2 שלבים:
-1. פנייה לצוות זהויות (פתיחת Incident ב-ServiceNow, קטגוריה: Identities) בבקשה להוסיף את משתמש ה-SKY
+1. פנייה לצוות זהויות (פתיחת Incident ב-ServiceNow, קטגוריה: Users & Access) בבקשה להוסיף את משתמש ה-SKY
    (DEV / PROD / שניהם) לקבוצה הייעודית ב-Entra ID: users-lionsgate-[dev/prod]-gcp
 2. פנייה לסייבר ממר"ם בבקשה להוסיף את המשתמש לקבוצה המתאימה לקבלת הרשאה לבאקט הספציפי
    (הלבנה=upload או השחרה=download) של היחידה הרלוונטית, לפי תבנית:
@@ -31,4 +31,4 @@
 קבוצות: users-drn/geo/sat-upld/dnld-liongate-dev/prod-gcp
 
 --- אם משהו לא ברור או תקוע ---
-פנו ל-CSM 9900 או פתחו Incident ב-ServiceNow (קטגוריה: Identities).
+פנו ל-CSM 9900 או פתחו Incident ב-ServiceNow (קטגוריה: Users & Access).

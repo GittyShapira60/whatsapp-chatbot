@@ -3,14 +3,7 @@
 == התחברות לעמדת SKY + VPN ==
 
 חוק בסיסי: מתחברים לעמדה אך ורק עם משתמש SKY-DEV.
-
-שלבי ההתחברות:
-1. היכנס לעמדה עם משתמש SKY-DEV
-2. פתח את Azure VPN Client מהתפריט
-3. יופיע פרופיל VPN אחד בשם "vnet-hub-palo" — לחץ Connect
-4. לאחר חיבור מוצלח — הפרופיל יראה "Connected"
-
---- תקלה: לא מופיע פרופיל VPN ---
+ה-VPN היחיד הוא GlobalProtect (פורטל: vpn.sky320.com). Azure VPN Client והפרופיל "vnet-hub-palo" הם ה-VPN הישן — לא בשימוש יותר.
 
 מדריך חיבור והגדרת GlobalProtect בסקיי
 שלב 1: בדיקת התקנה מקדימה

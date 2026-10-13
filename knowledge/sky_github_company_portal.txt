@@ -28,7 +28,9 @@ Cloud IT Support → Granting Permissions to GitHub
 לכל בעיה אחרת שקשורה לפיצול סביבת SKY ב-GitHub (ה-Enterprise החדש) — יש לפתוח טיקט ב-ServiceNow לצוות App Security (קטגוריה: Other) או לפנות לצוות ה-NOC.
 
 --- החלפת טלפון / אפליקציית Authenticator ---
-החלפת טלפון או אפליקציית Authenticator (לצורך אימות/SSO) מתבצעת דרך ווצאפ של סלקום: 052-4120234
+- יוזר SKY: החלפת מספר טלפון → פתיחת Incident ב-ServiceNow בקטגוריה Users & Access.
+- יוזר XD: איפוס שיטת אימות / Authenticator → בעצמך בפורטל IDENTIX (בלי טיקט): https://my.idf.il/identix/home ← "המשתמשים שלי" ← "פעולות משתמש".
+- יוזר קליק-ת"ז: החלפת טלפון או אפליקציית Authenticator → וואטסאפ של סלקום: 052-4120234
 
 --- Company Portal – התקנת כלים ---
 Company Portal היא חנות האפליקציות של המכונה.

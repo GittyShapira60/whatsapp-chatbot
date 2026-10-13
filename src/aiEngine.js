@@ -104,6 +104,23 @@ async function callGemini(provider, systemPrompt, history, images = []) {
   return text.trim();
 }
 
+async function callGeminiWithFallback(provider, systemPrompt, history, images = []) {
+  try {
+    return await callGemini(provider, systemPrompt, history, images);
+  } catch (err) {
+    const fallbackModel = process.env.GEMINI_FALLBACK_MODEL ?? 'gemini-2.5-flash';
+    const isOverloadOrQuota = /\b(429|503)\b|overloaded|high demand|quota/i.test(err.message);
+    if (!isOverloadOrQuota || fallbackModel === provider.model) throw err;
+    console.warn(`[AI] ${provider.model} unavailable (${err.message.slice(0, 80)}) → falling back to ${fallbackModel}`);
+    const fallback = {
+      ...provider,
+      model: fallbackModel,
+      url: provider.url.replace(`/models/${provider.model}:`, `/models/${fallbackModel}:`),
+    };
+    return await callGemini(fallback, systemPrompt, history, images);
+  }
+}
+
 async function callOpenAICompatible(provider, systemPrompt, history, images = []) {
   const messages = [{ role: 'system', content: systemPrompt }];
 
@@ -173,7 +190,7 @@ export async function generateResponse(history, images = []) {
     const systemPrompt = useMinimalPrompt ? getMinimalSystemPrompt() : fullPrompt;
     try {
       const text = provider.type === 'gemini'
-        ? await callGemini(provider, systemPrompt, trimmedHistory, images)
+        ? await callGeminiWithFallback(provider, systemPrompt, trimmedHistory, images)
         : await callOpenAICompatible(provider, systemPrompt, trimmedHistory, images);
 
       if (trimmedHistory.length < history.length) {

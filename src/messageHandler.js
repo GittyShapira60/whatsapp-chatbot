@@ -103,8 +103,20 @@ function looksLikeKnowledgeQuestion(text) {
 const FORBIDDEN_WITHOUT_TOKEN = [
   'הנציג מטפל', 'מטפל בפנייתך', 'העברתי לצוות', 'שלחתי לטיפול',
   'הנציג יטפל', 'אני אטפל בזה', 'כבר מטפל', 'אני ממשיך עם הבקשה',
-  'אסדר את זה', 'אני על זה',
+  'אסדר את זה',
 ];
+
+// ביטויי "מילוי" שהמודל לפעמים פותח בהם ("היי! אין בעיה, אני על זה 👍") — לא שווים ניסיון חוזר
+// (שמאט את התשובה), פשוט מסירים אותם מהטקסט.
+const FILLER_PATTERN = /[,،]?[ \t]*(אני על זה|בודק בשבילך|רגע אחד,? בודק)[ \t]*(👍|🔍)?[ \t]*[.!]?/g;
+
+function stripFiller(text) {
+  return text
+    .replace(FILLER_PATTERN, '')
+    .replace(/^[\s,.!]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 const MAX_AI_RETRIES = 3;
 
@@ -443,10 +455,13 @@ export async function handleIncomingUserMessage({
   const isComplete = aiReply.includes(REQUEST_COMPLETE_TOKEN);
   // הסרה הגנתית: גם אם [USERNAME_HELPER] לא תפס אבל בכל זאת מופיע בטקסט
   // (למשל בתשובה ארוכה יותר) — לעולם לא ישלח למשתמש כמו שהוא.
-  const cleanReply = aiReply
+  const tokenFreeReply = aiReply
     .replace(REQUEST_COMPLETE_TOKEN, '')
     .replace('[USERNAME_HELPER]', '')
+    .replace(/\*\*(.+?)\*\*/g, '*$1*') // מודגש בוואטסאפ = כוכבית אחת; "**" מופיע ככוכביות גלויות
     .trim();
+  // כשהבקשה באמת הועברה (REQUEST_COMPLETE) "אני על זה" נכון — אחרת זה מילוי מיותר ומסירים אותו
+  const cleanReply = isComplete ? tokenFreeReply : stripFiller(tokenFreeReply);
 
   log('[AI]', `תגובה התקבלה | ${aiReply.length} תווים | REQUEST_COMPLETE: ${isComplete ? 'כן ✅' : 'לא'}`);
 

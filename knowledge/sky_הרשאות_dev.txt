@@ -17,4 +17,4 @@ Member — מקבל את ההרשאות בפועל (חייב להיות גם Mem
 הקבוצות מסתנכרנות אוטומטית עם GCP — אין צורך להגדיר הרשאות ישירות ב-GCP.
 
 אם אינך Owner של הקבוצה — פנה ל-Owner של הפרויקט.
-אם אינך יודע מי ה-Owner — פתח טיקט Incident ב-ServiceNow, קטגוריה: Identities.
+אם אינך יודע מי ה-Owner — פתח טיקט Incident ב-ServiceNow, קטגוריה: Users & Access.

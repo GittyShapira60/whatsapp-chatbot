@@ -1,0 +1,70 @@
+== מדריך ServiceNow – Public Cloud (9900 וממר"ם): איזה טופס לפתוח ומה למלא ==
+פורטל: https://servicenow.idf.il/publiccloud
+
+--- כללי ---
+- VPN: אין יותר שימוש ב-VPN הישן (Azure VPN). כל פנייה על VPN / שגיאות רשת / "לא מתחבר ל-vpn.sky320.com" = GlobalProtect, וטיקט נפתח בקטגוריה Network & Connectivity Services.
+- ערכים קבועים בכל טופס:
+  Department Color: GREEN (תמיד)
+  Related Project: 9900 (תמיד)
+  Unit: מודיעין / אמ"ן (תמיד)
+
+--- פעולות בסיסיות על יוזר XD — פורטל הזהויות IDENTIX (בלי טיקט!) ---
+לפני שפותחים טיקט: אם המשתמש רוצה לבצע פעולה בסיסית על היוזר החזק (XD) שלו:
+- בדיקת תוקף יוזר XD
+- איפוס סיסמה ליוזר XD
+- איפוס שיטת אימות / איפוס Authenticator (אוטנטיקטור) ליוזר XD
+→ לא פותחים טיקט. נכנסים לפורטל הזהויות IDENTIX: https://my.idf.il/identix/home
+→ לוחצים "המשתמשים שלי" ← "פעולות משתמש" ← מבצעים את הפעולה בעצמך.
+
+--- פרטי קשר ---
+- קידום טיפול בטיקט תקוע: צוות NOC — טלפון / וואטסאפ 052-903-4112
+- אישור יוזר חזק XD: שירן הקב"מית — וואטסאפ 050-246-4912 עם שם מלא + ת"ז
+- מוקד מרחב ציבורי / סלקום (יוזר קליק / ת"ז): 052-4120234
+- איפוס סיסמה Microsoft: https://passwordreset.microsoftonline.com
+
+== 1. תקלות – Report an Incident ==
+מסלול: Public Cloud ServiceNow → Report an Incident → [קטגוריה]
+
+* Network & Connectivity Services — תקלות GlobalProtect ורשת (Connection Failed, ניתוקים):
+  - What's the issue: Global Protect error / Not connecting
+  - Urgency & Impact: 2 - Medium
+  - Title: לא ניתן להתחבר לגלובל פרוטקט
+  - Describe your issue: "היי, ניסיתי להתחבר לגלובל פרוטקט וזה לא נותן לי. שם היוזר סקיי שלי: [הכנס יוזר]"
+  - Attachments: חובה צילום מסך של הודעת השגיאה
+* Users & Access — שגיאות התחברות לפורטלים, החלפת מספר טלפון ביוזר SKY, חוסר שיוך לקבוצות Entra ID, חסימת גישה ל-GCP Console. (איפוס Authenticator ליוזר XD מתבצע ב-IDENTIX ללא טיקט.)
+* Workstations — איטיות או נפילות של מכונות AVD, תקלות רשת פנימיות בעמדה מקומית.
+* Cloud Services — תקלות תשתית בענני Azure, AWS, GCP (קונסול, בסיסי נתונים, שירותי ענן).
+* Cyber & Development — חסימות Firewall, תקלות גישה ל-GitHub, חריגות VPC SC ו-Org Policy (טיפול סייבר ממר"ם).
+* FinOps & Costs — חיובים שגויים, חריגות תקציב ענן, בעיות בצפייה בעלויות.
+
+== 2. בקשות – New Request ==
+
+📁 Identities (ניהול משתמשים):
+- Create SKY Dev/Prod user (יצירת משתמש בסקיי):
+  שדות: Type Of User (Both/Dev/Prod), First Name, Last Name, ID, Phone, Pikud, Do you have XC user in TERRA (No)
+  קובץ חובה: אישור סיווג ביטחוני חתום בתוקף
+
+📁 Cloud IT (תשתיות ועמדות):
+- Increasing Resources for AVD Machines (הגדלת משאבים למכונה):
+  שדות: Full name, Domain (TERRA / SKY), XD user, Please provide the computer name, Phone, Unit (מודיעין), Related project (9900), VM's name, Problem description
+  קובץ חובה: מסמך אישור FinOps מאושר
+- Assign AVD Machine (הקצאת מכונת AVD):
+  שדות: Full name, Domain (SKY), AVD environment assignment (Hostpool-9900-DEV / Hostpool-9900-Plat), DEV user (@dev.sky320.com), Phone, Unit (מודיעין), Related project (9900)
+- Granting Permissions to GitHub (הרשאות גיטהאב):
+  שדות: Full name, Domain (SKY), DEV user, Phone, Unit (מודיעין), Related project (9900), GitHub username, Organization (Sky320), Repository (Workspace-9900-dev), Permission (read / write / admin)
+- Install (format) workstations (פרמוט והתקנת עמדות):
+  שדות: Full name, Phone, Domain (SKY/Ratzif/Terra/Yarden), Are you a new customer? (No), Unit (מודיעין), Related project (9900), Computer serial number (SN), Arrived with additional equipment, Onboarding training required, Is Base entry approval required
+- Installing an Application / Development Tool (התקנת אפליקציה / כלי פיתוח):
+  שדות: Full name, Domain (SKY), DEV user, Phone, Unit (מודיעין), Related project (9900), Application name, Installation location (VM / Local), URL or Installation file
+
+📁 בקשות נוספות:
+- Cyber: Create New Firewall Rule, Client onboarding to CAPENA, Exclude WAF for PT, Add new light rail user
+- Cloud Soc: Block & Immobilize Indicators of Compromise, Enable an IOC, Investigation for Suspicious Entities
+
+== צרופות נדרשות ==
+- תקלת רשת / GlobalProtect: צילום מסך של השגיאה
+- יצירת משתמש SKY: אישור סיווג ביטחוני חתום בתוקף
+- הגדלת משאבים למכונה: אישור FinOps
+
+== אחרי פתיחת הפנייה ==
+שומרים את מספר הפנייה (INCXXXXXXX לתקלה / RITMXXXXXXX לבקשה). לקידום הטיפול — צוות NOC: 052-903-4112.

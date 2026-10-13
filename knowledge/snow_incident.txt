@@ -19,23 +19,14 @@
 - לחץ Submit ושמור את מספר הטיקט (INCXXXXXXX)
 
 --- סוגי טיקטים: מה לבחור ב"Where did you experience the issue?" ---
-
-1. Identities — לבעיות זהויות והרשאות:
-   פתח Incident מסוג Identities כאשר:
-   - המשתמש לא מצליח להתחבר
-   - המשתמש לא רואה קבוצת הרשאות שאמורה להיות לו
-   - חסרות הרשאות לאפליקציה קיימת
-   - בעיית גישה ל-AVD
-   - בעיית גישה ל-Git
-   - כל תקלה הקשורה לזהויות והרשאות
-   רלוונטי לסביבות SKY ו-HORIZON.
-   תת-קטגוריות: Permissions for users / Permissions for applications / Strong user creation / Other
-
-2. GCP (Sky / Horizon) — לתקלות GCP:
-   - VPC SC Exclusions: חריגות פוליסות SKY (REPO, CI/CD, DB, בנייה בפלטפורמה)
-   - FW Exclusions: בקשות להחרגה/פתיחה של Palo Alto FW
-   - FinOps: חיובים לא תקינים / חיובים שלא אמורים להופיע / חוסר יכולת לראות חיוב
-   - Other: מכונה שלא מופיעה / מכונה שנופלת / בעיות AVD תפעוליות / אפליקציה לא עובדת / תקלות כלליות בעמדה
+(פירוט מלא של הטפסים: snow_מדריך_טפסים_ומסלולים.txt)
+- Network & Connectivity Services — תקלות GlobalProtect ורשת (Connection Failed, ניתוקים)
+- Users & Access — שגיאות התחברות לפורטלים, משתמש SKY נעול/חסום, החלפת מספר טלפון ביוזר SKY, חוסר שיוך לקבוצות Entra ID, חסימת גישה ל-GCP Console
+- Workstations — איטיות או נפילות של מכונות AVD, מכונה שלא מופיעה, תקלות רשת פנימיות בעמדה מקומית
+- Cloud Services — תקלות תשתית בענני Azure, AWS, GCP (קונסול, בסיסי נתונים, שירותי ענן)
+- Cyber & Development — חסימות Firewall, תקלות גישה ל-GitHub, חריגות VPC SC ו-Org Policy
+- FinOps & Costs — חיובים שגויים, חריגות תקציב ענן, בעיות בצפייה בעלויות
+ערכים קבועים: Department color: GREEN | Related project: 9900 | Unit: מודיעין / אמ"ן
 
 --- לאחר פתיחת הטיקט ---
 - מספר פנייה: INCXXXXXXX
