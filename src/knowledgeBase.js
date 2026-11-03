@@ -91,18 +91,38 @@ function capByBudget(rankedDocs) {
 // and keywords alone miss phrasing/synonym variation — together they cover
 // each other's blind spots. If the embeddings call fails (network, rate
 // limit, missing token), we transparently fall back to keyword-only.
-const EMBEDDING_MODEL = 'text-embedding-3-small';
-const EMBEDDING_URL = 'https://models.inference.ai.azure.com/embeddings';
 let cachedDocEmbeddings = null; // Map<source, number[]>
 
+// Azure OpenAI embeddings deployment (preferred, paid org account) → otherwise GitHub Models.
+// (The old models.inference.ai.azure.com endpoint was retired — every call there failed silently.)
+function getEmbeddingRequest() {
+  const azureDeployment = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT;
+  if (azureDeployment && process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_KEY) {
+    const endpoint = process.env.AZURE_OPENAI_ENDPOINT.replace(/\/+$/, '');
+    const apiVersion = process.env.AZURE_OPENAI_API_VERSION ?? '2025-04-01-preview';
+    return {
+      url: `${endpoint}/openai/deployments/${azureDeployment}/embeddings?api-version=${apiVersion}`,
+      headers: { 'Content-Type': 'application/json', 'api-key': process.env.AZURE_OPENAI_KEY },
+      model: azureDeployment,
+    };
+  }
+  if (process.env.GITHUB_TOKEN) {
+    return {
+      url: 'https://models.github.ai/inference/embeddings',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` },
+      model: 'openai/text-embedding-3-small',
+    };
+  }
+  return null;
+}
+
 async function embedTexts(texts) {
-  const response = await fetch(EMBEDDING_URL, {
+  const req = getEmbeddingRequest();
+  if (!req) throw new Error('no embeddings provider configured');
+  const response = await fetch(req.url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
-    },
-    body: JSON.stringify({ model: EMBEDDING_MODEL, input: texts }),
+    headers: req.headers,
+    body: JSON.stringify({ model: req.model, input: texts }),
     signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) {

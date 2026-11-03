@@ -1,14 +1,122 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { getSystemPrompt, getMinimalSystemPrompt } from './knowledgeBase.js';
 
+// ---- Claude (Anthropic API) ----
+let _anthropicClient = null;
+function getAnthropicClient() {
+  // SDK retries 408/409/429/5xx/529 + connection errors itself (maxRetries) before throwing.
+  _anthropicClient ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 90_000, maxRetries: 2 });
+  return _anthropicClient;
+}
+
+function buildClaudeProvider() {
+  return { type: 'claude', model: process.env.BOT_CLAUDE_MODEL ?? 'claude-opus-5-5' };
+}
+
+// Server-side refusal fallback ("default" routing) is supported on these models on the Claude API.
+const SUPPORTS_DEFAULT_FALLBACKS = /^claude-(opus-5|fable-5|sonnet-5-5)/;
+const CLAUDE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+async function callClaude(provider, systemPrompt, history, images = []) {
+  // The fixed instructions are identical on every request → cache them; the per-question knowledge
+  // files come after the cache breakpoint so they don't invalidate it.
+  const staticPrompt = getMinimalSystemPrompt();
+  const system = systemPrompt.startsWith(staticPrompt) && systemPrompt.length > staticPrompt.length
+    ? [
+        { type: 'text', text: staticPrompt, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: systemPrompt.slice(staticPrompt.length) },
+      ]
+    : [{ type: 'text', text: systemPrompt }];
+
+  const supportedImages = images.filter(img => CLAUDE_IMAGE_TYPES.has(img.contentType));
+  const messages = history.map((m, i) => {
+    const isLastUser = m.role === 'user' && i === history.length - 1;
+    if (isLastUser && supportedImages.length > 0) {
+      return {
+        role: 'user',
+        content: [
+          ...supportedImages.map(img => ({
+            type: 'image',
+            source: { type: 'base64', media_type: img.contentType, data: img.data },
+          })),
+          { type: 'text', text: m.content },
+        ],
+      };
+    }
+    return { role: m.role, content: m.content };
+  });
+
+  const request = {
+    model: provider.model,
+    max_tokens: 16000,
+    // Support chat: low effort keeps WhatsApp replies fast (thinking stays on, as these models require).
+    output_config: { effort: process.env.BOT_CLAUDE_EFFORT ?? 'low' },
+    system,
+    messages,
+  };
+  if (SUPPORTS_DEFAULT_FALLBACKS.test(provider.model)) {
+    request.betas = ['server-side-fallback-2026-07-01'];
+    request.fallbacks = 'default';
+  }
+
+  const response = await getAnthropicClient().beta.messages.create(request);
+
+  if (response.stop_reason === 'refusal') {
+    throw new Error(`Claude refusal (category: ${response.stop_details?.category ?? 'unknown'})`);
+  }
+  const text = response.content
+    .filter(block => block.type === 'text')
+    .map(block => block.text)
+    .join('')
+    .trim();
+  if (!text) throw new Error(`No content in Claude response (stop_reason: ${response.stop_reason})`);
+  console.log(`[AI] claude usage | in: ${response.usage.input_tokens} | cache read: ${response.usage.cache_read_input_tokens ?? 0} | out: ${response.usage.output_tokens}`);
+  return text;
+}
+
+function isRetryableClaudeError(err) {
+  return err instanceof Anthropic.RateLimitError
+    || err instanceof Anthropic.APIConnectionError // includes timeouts
+    || (err instanceof Anthropic.APIError && typeof err.status === 'number' && err.status >= 500); // 5xx + 529 overloaded
+}
+
+function buildGeminiProvider(model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash') {
+  return {
+    type: 'gemini',
+    model,
+    url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    headers: { 'Content-Type': 'application/json' },
+  };
+}
+
+// Newer api-version → supports max_completion_tokens and reasoning models (gpt-5 / o-series).
+const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION ?? '2025-04-01-preview';
+
+function buildAzureOpenAIProvider(deployment) {
+  const endpoint = process.env.AZURE_OPENAI_ENDPOINT.replace(/\/+$/, '');
+  return {
+    type: 'azure-openai',
+    model: deployment,
+    url: `${endpoint}/openai/deployments/${deployment}/chat/completions?api-version=${AZURE_OPENAI_API_VERSION}`,
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': process.env.AZURE_OPENAI_KEY,
+    },
+  };
+}
+
+// Priority: Claude (Anthropic API) → Azure OpenAI → Gemini → others. Lower ones serve as fallbacks.
 function getProviderConfig() {
+  if (process.env.ANTHROPIC_API_KEY) {
+    return buildClaudeProvider();
+  }
+
+  if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_KEY) {
+    return buildAzureOpenAIProvider(process.env.AZURE_OPENAI_DEPLOYMENT ?? 'gpt-4o');
+  }
+
   if (process.env.GEMINI_API_KEY) {
-    const model = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
-    return {
-      type: 'gemini',
-      model,
-      url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      headers: { 'Content-Type': 'application/json' },
-    };
+    return buildGeminiProvider();
   }
 
   if (process.env.AZURE_FOUNDRY_ENDPOINT && process.env.AZURE_FOUNDRY_KEY) {
@@ -20,19 +128,6 @@ function getProviderConfig() {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.AZURE_FOUNDRY_KEY}`,
-      },
-    };
-  }
-
-  if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_KEY) {
-    const deployment = process.env.AZURE_OPENAI_DEPLOYMENT ?? 'gpt-4o';
-    return {
-      type: 'azure-openai',
-      model: deployment,
-      url: `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${deployment}/chat/completions?api-version=2024-08-01-preview`,
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': process.env.AZURE_OPENAI_KEY,
       },
     };
   }
@@ -104,21 +199,68 @@ async function callGemini(provider, systemPrompt, history, images = []) {
   return text.trim();
 }
 
-async function callGeminiWithFallback(provider, systemPrompt, history, images = []) {
-  try {
-    return await callGemini(provider, systemPrompt, history, images);
-  } catch (err) {
-    const fallbackModel = process.env.GEMINI_FALLBACK_MODEL ?? 'gemini-2.5-flash';
-    const isOverloadOrQuota = /\b(429|503)\b|overloaded|high demand|quota/i.test(err.message);
-    if (!isOverloadOrQuota || fallbackModel === provider.model) throw err;
-    console.warn(`[AI] ${provider.model} unavailable (${err.message.slice(0, 80)}) → falling back to ${fallbackModel}`);
-    const fallback = {
-      ...provider,
-      model: fallbackModel,
-      url: provider.url.replace(`/models/${provider.model}:`, `/models/${fallbackModel}:`),
-    };
-    return await callGemini(fallback, systemPrompt, history, images);
+function callProvider(provider, systemPrompt, history, images) {
+  if (provider.type === 'claude') return callClaude(provider, systemPrompt, history, images);
+  if (provider.type === 'gemini') return callGemini(provider, systemPrompt, history, images);
+  return callOpenAICompatible(provider, systemPrompt, history, images);
+}
+
+// When the main model is overloaded / out of quota / rate-limited, answer from a fallback instead of
+// failing the user:
+//  - Azure OpenAI main → AZURE_OPENAI_FALLBACK_DEPLOYMENT if set, otherwise Gemini (if GEMINI_API_KEY is set)
+//  - Gemini main       → GEMINI_FALLBACK_MODEL (default gemini-2.5-flash)
+function getFallbackProvider(provider) {
+  if (provider.type === 'claude') {
+    if (process.env.GEMINI_API_KEY) return buildGeminiProvider();
+    return null;
   }
+  if (provider.type === 'azure-openai') {
+    const fallbackDeployment = process.env.AZURE_OPENAI_FALLBACK_DEPLOYMENT;
+    if (fallbackDeployment && fallbackDeployment !== provider.model) return buildAzureOpenAIProvider(fallbackDeployment);
+    if (process.env.GEMINI_API_KEY) return buildGeminiProvider(process.env.GEMINI_FALLBACK_MODEL ?? 'gemini-2.5-flash');
+    return null;
+  }
+  if (provider.type === 'gemini') {
+    const fallbackModel = process.env.GEMINI_FALLBACK_MODEL ?? 'gemini-2.5-flash';
+    return fallbackModel === provider.model ? null : buildGeminiProvider(fallbackModel);
+  }
+  return null;
+}
+
+function isOverloadOrQuotaError(err) {
+  return isRetryableClaudeError(err)
+    || /\b(429|500|502|503|504)\b|overloaded|high demand|quota|rate.?limit|timeout|timed out|fetch failed|ECONN|ENOTFOUND/i.test(err.message);
+}
+
+// Walks the fallback chain (e.g. Claude → Gemini → Gemini fallback model) on overload / quota / network errors.
+async function callWithFallback(provider, systemPrompt, history, images = []) {
+  let current = provider;
+  for (let hop = 0; ; hop++) {
+    try {
+      return await callProvider(current, systemPrompt, history, images);
+    } catch (err) {
+      const fallback = hop < 2 && isOverloadOrQuotaError(err) ? getFallbackProvider(current) : null;
+      if (!fallback) throw err;
+      console.warn(`[AI] ${current.type}/${current.model} unavailable (${err.message.slice(0, 80)}) → falling back to ${fallback.type}/${fallback.model}`);
+      current = fallback;
+    }
+  }
+}
+
+// Reasoning models (gpt-5 / o-series) reject a custom temperature — remembered per deployment after the first refusal.
+const _noTemperatureModels = new Set();
+
+function buildChatBody(provider, messages) {
+  const body = { model: provider.model, messages };
+  if (provider.type === 'azure-openai') {
+    // max_completion_tokens works for all current Azure models (max_tokens is rejected by reasoning models),
+    // and reasoning tokens count toward it — so it must be well above the visible answer length.
+    body.max_completion_tokens = 8000;
+  } else {
+    body.max_tokens = 800;
+  }
+  if (!_noTemperatureModels.has(provider.model)) body.temperature = 0.2;
+  return body;
 }
 
 async function callOpenAICompatible(provider, systemPrompt, history, images = []) {
@@ -145,8 +287,8 @@ async function callOpenAICompatible(provider, systemPrompt, history, images = []
   const response = await fetch(provider.url, {
     method: 'POST',
     headers: provider.headers,
-    body: JSON.stringify({ model: provider.model, messages, max_tokens: 800, temperature: 0.2 }),
-    signal: AbortSignal.timeout(30000),
+    body: JSON.stringify(buildChatBody(provider, messages)),
+    signal: AbortSignal.timeout(60000),
   });
 
   const rawBody = await response.text();
@@ -167,10 +309,18 @@ async function callOpenAICompatible(provider, systemPrompt, history, images = []
     return callOpenAICompatible(provider, systemPrompt, history, images);
   }
 
-  if (!response.ok) throw new Error(`AI error ${response.status}: ${data?.error?.message ?? rawBody.slice(0, 300)}`);
+  const errorMessage = data?.error?.message ?? '';
+  if (response.status === 400 && /temperature/i.test(errorMessage) && !_noTemperatureModels.has(provider.model)) {
+    console.warn(`[AI] ${provider.model} does not accept temperature — retrying without it`);
+    _noTemperatureModels.add(provider.model);
+    return callOpenAICompatible(provider, systemPrompt, history, images);
+  }
 
-  const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error('No content in AI response');
+  if (!response.ok) throw new Error(`AI error ${response.status}: ${errorMessage || rawBody.slice(0, 300)}`);
+
+  const choice = data?.choices?.[0];
+  const text = choice?.message?.content;
+  if (!text) throw new Error(`No content in AI response (finish_reason: ${choice?.finish_reason ?? 'unknown'})`);
   return text.trim();
 }
 
@@ -189,9 +339,7 @@ export async function generateResponse(history, images = []) {
   while (true) {
     const systemPrompt = useMinimalPrompt ? getMinimalSystemPrompt() : fullPrompt;
     try {
-      const text = provider.type === 'gemini'
-        ? await callGeminiWithFallback(provider, systemPrompt, trimmedHistory, images)
-        : await callOpenAICompatible(provider, systemPrompt, trimmedHistory, images);
+      const text = await callWithFallback(provider, systemPrompt, trimmedHistory, images);
 
       if (trimmedHistory.length < history.length) {
         console.warn(`[AI] היסטוריה קוצרה מ-${history.length} ל-${trimmedHistory.length} הודעות (413)`);
