@@ -1,6 +1,6 @@
 == Cloud IT Support – בקשות ב-ServiceNow ==
 
-כניסה: https://servicenow.idf.il → לחץ "Cloud IT Support"
+כניסה: https://servicenow.idf.il/publiccloud → לחץ "Cloud IT Support"
 
 --- סוגי בקשות זמינות ---
 

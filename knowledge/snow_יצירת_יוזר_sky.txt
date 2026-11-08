@@ -1,6 +1,6 @@
 == יצירת משתמש SKY דרך ServiceNow ==
 
-כניסה: https://servicenow.idf.il (עם יוזר XD)
+כניסה: https://servicenow.idf.il/publiccloud (עם יוזר XD)
 
 --- שלבי פתיחת בקשה ---
 1. לחץ "Create Request"

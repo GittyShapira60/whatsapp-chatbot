@@ -1,6 +1,6 @@
 == פתיחת Incident ב-ServiceNow ==
 
-כניסה: https://servicenow.idf.il
+כניסה: https://servicenow.idf.il/publiccloud
 שלב א: לחץ "Create Incident"
 שלב ב: לחץ "Create Incident"
 

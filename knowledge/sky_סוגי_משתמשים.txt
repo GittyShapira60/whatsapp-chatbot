@@ -30,7 +30,7 @@
 
 במידה ויש בידך את היוזר החזק (XD), בצע איפוס סיסמה / איפוס Authenticator / בדיקת תוקף בפורטל הזהויות IDENTIX: https://my.idf.il/identix/home ← "המשתמשים שלי" ← "פעולות משתמש" (בלי טיקט).
 
-לסיום, התחבר ל-ServiceNow עם יוזר XD דרך הקישור: https://servicenow.idf.il
+לסיום, התחבר ל-ServiceNow עם יוזר XD דרך הקישור: https://servicenow.idf.il/publiccloud
 
 קישור לשחרור יוזר XD: https://go.idf.il/o6k1l8c4d8
 
