@@ -59,7 +59,7 @@
 
 📁 בקשות נוספות:
 - Cyber: Create New Firewall Rule, Client onboarding to CAPENA, Exclude WAF for PT, Add new light rail user
-  ⚠️ חוקי Firewall, Subnet, טריגר CI/CD ו-VPC SC ב-GCP — קודם בשירות עצמי בפורטל המפתחים של SKY (https://portal.sky320.internal), ראה sky_אוטומציות_self_service.txt. טיקט רק אם האוטומציה לא מכסה את הצורך.
+  ⚠️ חוקי Firewall, Subnet, טריגר CI/CD ו-VPC SC ב-GCP — קודם בשירות עצמי בפורטל המפתחים של SKY (https://portal.sky320.interna), ראה sky_אוטומציות_self_service.txt. טיקט רק אם האוטומציה לא מכסה את הצורך.
 - Cloud Soc: Block & Immobilize Indicators of Compromise, Enable an IOC, Investigation for Suspicious Entities
 
 == צרופות נדרשות ==

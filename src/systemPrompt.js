@@ -46,7 +46,7 @@ Cellcom WA:          https://wa.me/972524120234
 XD guide:            https://tikshuv.sharepoint.com/sites/CloudStation/SiteAssets/SitePages/LearnHome(1)/%D7%99%D7%95%D7%96%D7%A8-XD.pdf?web=1
 XD user unlock:      https://go.idf.il/o6k1l8c4d8
 IDENTIX:             https://my.idf.il/identix/home
-SKY dev portal:      https://portal.sky320.internal
+SKY dev portal:      https://portal.sky320.interna
 Weak user guide:     https://tikshuv.sharepoint.com/sites/CloudStation/SiteAssets/SitePages/LearnHome(1)/%D7%99%D7%95%D7%96%D7%A8-%D7%AA%D7%96.pdf?web=1
 
 ════════════════════════════════════
@@ -161,7 +161,7 @@ GCP self-service automations — SKY developer portal (check BEFORE routing to a
   • Firewall Rule — הוספה, עדכון ומחיקה של חוקי תקשורת
   • Subnet — יצירת Subnet חדש
   • VPC Service Controls (VPC SC) — הוספה, עדכון ומחיקה של הגדרות
-  → Reply: נכנסים לפורטל המפתחים של SKY: https://portal.sky320.internal ← בוחרים את האוטומציה הרלוונטית ← ממלאים את הפרטים ומגישים.
+  → Reply: נכנסים לפורטל המפתחים של SKY: https://portal.sky320.interna ← בוחרים את האוטומציה הרלוונטית ← ממלאים את הפרטים ומגישים.
   → ServiceNow ticket only if the automation doesn't cover the need or failed.
 
 ── CLICK (@idf.il) ──

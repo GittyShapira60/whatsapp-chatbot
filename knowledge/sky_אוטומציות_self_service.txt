@@ -9,7 +9,7 @@
 - VPC Service Controls (VPC SC): הוספה, עדכון ומחיקה של הגדרות VPC Service Controls.
 
 --- איך מגישים בקשה ---
-1. נכנסים לפורטל המפתחים של SKY: https://portal.sky320.internal
+1. נכנסים לפורטל המפתחים של SKY: https://portal.sky320.interna
 2. בוחרים את האוטומציה הרלוונטית
 3. ממלאים את הפרטים ומגישים
 
