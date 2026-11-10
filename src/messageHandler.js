@@ -32,7 +32,7 @@ const SERVICE_KEYWORDS = [
   'בעיה', 'לא עובד', 'לא מצליח', 'לא יכול', 'לא יכולה', 'שגיאה',
   'לא מוצא', 'לא מצאתי',
   'יצירת', 'ליצור', 'מחיקה', 'למחוק', 'נעילה', 'לנעול',
-  'לפתוח', 'פתיחת', 'הרשאות',
+  'לפתוח', 'פתיחת', 'הרשא', // הרשאה / הרשאת / הרשאות
   'לאפס', 'מאפס', 'איפוס', 'שכחתי',
   'עזור', 'תעזור', 'יכול לעזור', 'תוכל לעזור', 'לעזור',
   'קרה לי', 'קורה לי', 'תראה מה', 'תראה את',
@@ -97,6 +97,17 @@ function looksLikeKnowledgeQuestion(text) {
   if (firstLine.length > 40) return true;
   if (TOPIC_KEYWORDS.some(kw => lower.includes(kw))) return true;
   return false;
+}
+
+// הודעה עם כמה שאלות: מספיק שאחת מהן היא שאלת ידע (ולא בקשת שירות) כדי לבקש הזדהות.
+// בלי הפיצול, מילת שירות אחת באחת השאלות ("בעיה", "הרשאות"...) הייתה פוטרת את כל ההודעה מאימות.
+function containsKnowledgeQuestion(text) {
+  const segments = text
+    .split(/(?<=[?!.\n])/)
+    .map(s => s.trim())
+    .filter(s => s.length > 1);
+  if (segments.length === 0) return false;
+  return segments.some(seg => looksLikeKnowledgeQuestion(seg) && !looksLikeServiceRequest(seg) && !looksLikeGreeting(seg));
 }
 
 // ביטויים שמרמזים על העברה לנציג בלי [REQUEST_COMPLETE] — שגיאת AI
@@ -316,7 +327,7 @@ export async function handleIncomingUserMessage({
   // ── אימות זהות לשאלות ידע ──
   // רק בהודעה הראשונה של השיחה (אין היסטוריה) — אחרת זו המשך של שיחה/בקשת שירות שכבר בעיצומה, ואסור להפריע לה עם בקשת אימות.
   if (!await isVerified(senderId)) {
-    if (looksLikeKnowledgeQuestion(userText) && !looksLikeServiceRequest(userText) && !hasImages && !looksLikeGreeting(userText)) {
+    if (containsKnowledgeQuestion(userText) && !hasImages && !looksLikeGreeting(userText)) {
       log('[VERIFY]', `${senderId} → שאלת ידע ללא אימות → מבקש מייל ארגוני`);
       initiateEmailAuth({ senderId, replyTo, subject, question: userText });
       const allowedDomains = (process.env.VERIFIED_EMAIL_DOMAINS ?? '').split(',').map(d => `@${d.trim()}`).filter(Boolean);
